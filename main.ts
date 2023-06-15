@@ -1,10 +1,10 @@
 let whiteLine = 1
-let sparovan:number
+let sparovan: number
 radio.setFrequencyBand(0)
 radio.setGroup(1)
 radio.setTransmitPower(7)
 
-
+let zamekMotoru = false
 
 
 let stranaOtace = 2
@@ -26,7 +26,7 @@ input.onButtonPressed(Button.B, function () {
 })
 radio.onReceivedNumber(function (receivedNumber: number) {
 
-    if (receivedNumber === 24){
+    if (receivedNumber === 24) {
         sparovan = RadioPacketProperty.SerialNumber
 
         basic.showLeds(`
@@ -36,7 +36,7 @@ radio.onReceivedNumber(function (receivedNumber: number) {
     # . . . #
     # # # # #
     `)
-    } else if (RadioPacketProperty.SerialNumber === sparovan){
+    } else if (RadioPacketProperty.SerialNumber === sparovan) {
         smerjizdy = receivedNumber
 
 
@@ -50,7 +50,7 @@ radio.onReceivedNumber(function (receivedNumber: number) {
     }
 
 
- 
+
 })
 
 
@@ -105,10 +105,10 @@ basic.forever(function () {
         let Right = (whiteLine ^ pins.digitalReadPin(pinR)) == 0 ? false : true
 
         let ultrasonic = ping(DigitalPin.P2, DigitalPin.P1)
-     
 
 
-//modus
+
+        //modus
         let fowardModus = 0
         let rightModus = 0
         let leftModus = 0
@@ -128,7 +128,8 @@ basic.forever(function () {
 
         //krizovatka
         if (!Left && !Right && !Foward) {
-            if (leftModus === 0   && rightModus === 0) {
+            if (leftModus === 0 && rightModus === 0) {
+                zamekMotoru = true
                 krizovatkaX()
             }
 
@@ -136,10 +137,11 @@ basic.forever(function () {
 
         }
         console.log(ultrasonic)
-        if (ultrasonic < 5){
+        if (ultrasonic < 5) {
             if (ultrasonic != 0)
+                zamekMotoru = true
             objetPrekazku()
-           
+
         }
 
 
@@ -179,6 +181,7 @@ basic.forever(function () {
                 zatacky = 0.4
                 motory(rovne, zatacky)
             } else if (fowardModus === 1) {
+                zamekMotoru = true
                 bezCary()
             }
         }
@@ -186,8 +189,10 @@ basic.forever(function () {
         //mánévry
 
 
+        if (!zamekMotoru) {
+            motory(rovne, zatacky)
+        }
 
-        motory(rovne, zatacky)
 
 
 
@@ -196,7 +201,7 @@ basic.forever(function () {
 
         data.push(objekt)
 
-        if (data.length > 20) {
+        if (data.length > 30) {
             data.shift()
         }
         basic.pause(20)
@@ -224,7 +229,7 @@ function ping(trig: DigitalPin, echo: DigitalPin, maxCmDistance = 500): number {
 }
 
 
-function objetPrekazku(){
+function objetPrekazku() {
     basic.showLeds(`
             . . # . .
             . . # . .
@@ -233,36 +238,37 @@ function objetPrekazku(){
             . . # . .
             `)
     zatackaPravehoUhlu()
-    
-    let ultrasonic = ping(DigitalPin.P2, DigitalPin.P1)
-    basic.pause(100)
-    if(ultrasonic < 5){
-        stranaOtace = 2
-        basic.showLeds(`
-        . . # . .
-        . . . # . 
-        # # # # #
-        . . . # .
-        . . # . .
-        `)
-        manevrObjetiprekazdky()
-        
-        
-    } else{
-        zatackaPravehoUhlu()
-        zatackaPravehoUhlu()
-        stranaOtace = -2
-        basic.showLeds(`
-        . . # . .
-        . # . . . 
-        # # # # #
-        . # . . .
-        . . # . .
-        `)
-        manevrObjetiprekazdky()
-    }
+    zatackaPravehoUhlu()
+
+    // let ultrasonic = ping(DigitalPin.P2, DigitalPin.P1)
+    // basic.pause(100)
+    // if (ultrasonic < 5) {
+    //     stranaOtace = 2
+    //     basic.showLeds(`
+    //     . . # . .
+    //     . . . # . 
+    //     # # # # #
+    //     . . . # .
+    //     . . # . .
+    //     `)
+    //     manevrObjetiprekazdky()
 
 
+    // } else {
+    //     zatackaPravehoUhlu()
+    //     zatackaPravehoUhlu()
+    //     stranaOtace = -2
+    //     basic.showLeds(`
+    //     . . # . .
+    //     . # . . . 
+    //     # # # # #
+    //     . # . . .
+    //     . . # . .
+    //     `)
+    //     manevrObjetiprekazdky()
+    // }
+
+    zamekMotoru = false
 
 }
 
@@ -293,29 +299,34 @@ function krizovatkaX() {
     basic.showIcon(IconNames.Heart)
     switch (smerjizdy) {
         case 1:
-        
-          while(Left){
-              motory(0.7, 1)
-              Left = (whiteLine ^ pins.digitalReadPin(pinL)) == 0 ? false : true
-          }
+            motory(0.9, 1)
+            basic.pause(100)
+            while (Left) {
+                motory(0.7, 1)
+                Left = (whiteLine ^ pins.digitalReadPin(pinL)) == 0 ? false : true
+                basic.pause(20)
+            }
             break;
         case 2:
             motory(1, 0)
             basic.pause(100)
             break;
         case 3:
-            stranaOtace = -2
-            zatackaPravehoUhlu()
-
-            motory(1, 0)
-            basic.pause(250)
+            motory(0.9, 1)
+            basic.pause(100)
+            while (Right) {
+                motory(0.7, 1)
+                Right = (whiteLine ^ pins.digitalReadPin(pinL)) == 0 ? false : true
+                basic.pause(20)
+            }
             break
         default:
+
         // code block
     }
 
 
-
+    zamekMotoru = false
 }
 //krizovatkaT
 
@@ -356,7 +367,5 @@ function bezCary() {
         motory(2, 0)
         basic.pause(1000)
     }
+    zamekMotoru = false
 }
-
-
-
